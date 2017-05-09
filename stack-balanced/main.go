@@ -7,6 +7,24 @@ var opps = map[string]string{
 	"[": "]",
 	"(": ")",
 }
+var closing = map[string]struct{}{
+	"}": struct{}{},
+	"]": struct{}{},
+	")": struct{}{},
+}
+
+type stack []string
+
+func (s *stack) push(c string) {
+	(*s) = append((*s), c)
+}
+
+func (s *stack) pop() string {
+	n := len(*s)
+	tmp := (*s)[n-1]
+	*s = (*s)[0 : n-1]
+	return tmp
+}
 
 func main() {
 	var total int
@@ -15,29 +33,49 @@ func main() {
 	for i := 0; i < total; i++ {
 		var line string
 		fmt.Scanln(&line)
+		stk := &stack{}
 
-		stack := []string{}
+		isNo := false
 		for _, r := range line {
-			stack = append(stack, string(r))
-		}
-
-		var closing []string
-		var isNo bool
-		for _, char := range stack {
-			if val, ok := opps[char]; ok {
-				closing = append(closing, val)
-			} else if len(closing) == 0 || char != closing[len(closing)-1] {
-				isNo = true
-				break
+			c := string(r)
+			if isClosing(c) {
+				if len(*stk) > 0 {
+					if !(stk.pop() == c) {
+						isNo = true
+						break
+					}
+				} else {
+					isNo = true
+					break
+				}
+				// if len(*stk) > 0 {
+				// 	if !(stk.pop() == c) {
+				// 		isNo = true
+				// 		break
+				// 	}
+				// 	} else {
+				// 		isNo = true
+				// 		break
+				// 	}
 			} else {
-				closing = closing[:len(closing)-1]
+				stk.push(getOpposite(c))
 			}
 		}
 
-		if isNo {
+		if !isNo && len(*stk) == 0 {
+			fmt.Println("YES")
+		} else {
 			fmt.Println("NO")
-			continue
 		}
-		fmt.Println("YES")
 	}
+}
+
+func isClosing(c string) bool {
+	_, ok := closing[c]
+	return ok
+}
+
+func getOpposite(c string) string {
+	opp := opps[c]
+	return opp
 }
