@@ -8,9 +8,9 @@ import (
 // An MinHeap is a min-heap of ints.
 type MinHeap []int
 
-func (h MinHeap) Len() int           { return len(h) }
-func (h MinHeap) Less(i, j int) bool { return h[i] < h[j] }
-func (h MinHeap) Swap(i, j int)      { h[i], h[j] = h[j], h[i] }
+func (h *MinHeap) Len() int           { return len(*h) }
+func (h *MinHeap) Less(i, j int) bool { return (*h)[i] < (*h)[j] }
+func (h *MinHeap) Swap(i, j int)      { (*h)[i], (*h)[j] = (*h)[j], (*h)[i] }
 
 // Push TODO
 func (h *MinHeap) Push(x interface{}) {
@@ -28,19 +28,12 @@ func (h *MinHeap) Pop() interface{} {
 	return x
 }
 
-// Seek TODO
-func (h *MinHeap) Seek() interface{} {
-	old := *h
-	n := len(old)
-	return old[n-1]
-}
-
 // An MaxHeap is a min-heap of ints.
 type MaxHeap []int
 
-func (h MaxHeap) Len() int           { return len(h) }
-func (h MaxHeap) Less(i, j int) bool { return h[i] > h[j] }
-func (h MaxHeap) Swap(i, j int)      { h[i], h[j] = h[j], h[i] }
+func (h *MaxHeap) Len() int           { return len(*h) }
+func (h *MaxHeap) Less(i, j int) bool { return (*h)[i] > (*h)[j] }
+func (h *MaxHeap) Swap(i, j int)      { (*h)[i], (*h)[j] = (*h)[j], (*h)[i] }
 
 // Push TODO
 func (h *MaxHeap) Push(x interface{}) {
@@ -58,48 +51,63 @@ func (h *MaxHeap) Pop() interface{} {
 	return x
 }
 
-// Seek TODO
-func (h *MaxHeap) Seek() interface{} {
-	old := *h
-	n := len(old)
-	return old[n-1]
-}
-
 func main() {
 	var total int
 	fmt.Scanf("%d\n", &total)
 
-	minH := &MinHeap{}
-	maxH := &MaxHeap{}
-	heap.Init(minH)
-	heap.Init(maxH)
+	uppers := &MinHeap{}
+	lowers := &MaxHeap{}
+	heap.Init(uppers)
+	heap.Init(lowers)
 	for i := 0; i < total; i++ {
 		var n int
 		fmt.Scanf("%d\n", &n)
 
-		if minH.Len() > 0 && n <= heap.Pop(minH).(int) {
-			heap.Push(minH, n)
+		if lowers.Len() == 0 || getPeekLower(lowers) > n {
+			heap.Push(lowers, n)
 		} else {
-			heap.Push(maxH, n)
+			heap.Push(uppers, n)
 		}
+		rebalance(lowers, uppers)
 
-		for minH.Len() > maxH.Len() {
-			heap.Push(maxH, heap.Pop(minH))
-		}
-		for (maxH.Len() - minH.Len()) > 1 {
-			heap.Push(minH, heap.Pop(maxH))
-		}
-
-		var x float64
-		if minH.Len() == maxH.Len() {
-			fmt.Println("Heaps equal in len")
-			x = float64(heap.Pop(minH).(int)+heap.Pop(maxH).(int)) / 2
-		} else {
-			// x = float64((*maxH)[maxH.Len()-1])
-			fmt.Println("Heaps disequal in len")
-			x = float64(heap.Pop(maxH).(int))
-		}
+		x := getMedian(lowers, uppers)
 
 		fmt.Printf("%.1f\n", x)
 	}
+}
+
+func rebalance(lowers *MaxHeap, uppers *MinHeap) {
+	for lowers.Len()-uppers.Len() > 1 {
+		l := heap.Pop(lowers).(int)
+		heap.Push(uppers, l)
+	}
+	for uppers.Len()-lowers.Len() > 0 {
+		u := heap.Pop(uppers).(int)
+		heap.Push(lowers, u)
+	}
+}
+
+func getMedian(lowers *MaxHeap, uppers *MinHeap) float64 {
+	var median float64
+	if lowers.Len() == uppers.Len() {
+		l := getPeekLower(lowers)
+		u := getPeekUpper(uppers)
+		median = float64(l+u) / 2
+	} else {
+		l := getPeekLower(lowers)
+		median = float64(l)
+	}
+
+	return median
+}
+
+func getPeekLower(lowers *MaxHeap) int {
+	v := heap.Pop(lowers).(int)
+	heap.Push(lowers, v)
+	return v
+}
+func getPeekUpper(uppers *MinHeap) int {
+	v := heap.Pop(uppers).(int)
+	heap.Push(uppers, v)
+	return v
 }
